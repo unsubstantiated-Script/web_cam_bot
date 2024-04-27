@@ -1,4 +1,5 @@
 import glob
+import os
 
 import cv2
 import time
@@ -11,6 +12,19 @@ first_frame = None
 count = 0
 status_list = []
 count_frame = 1
+image_with_object = ""
+
+password = os.getenv("GMAIL_PASSWORD")
+sender = os.getenv("SENDER")
+receiver = os.getenv("RECEIVER")
+
+
+def clean_folder():
+    images = glob.glob('images/*.png')
+    for image in images:
+        os.remove(image)
+
+
 while True:
     count += 1
     status = 0
@@ -59,14 +73,13 @@ while True:
 
         # Seeing the change as the object leaves the screen 1 -> 0
         if status_list[0] == 1 and status_list[1] == 0:
-            send_email(image_with_object, )
-
-        cv2.imshow('My Video', frame)
+            send_email(image_with_object, password, sender, receiver)
+            clean_folder()
     else:
         pass
 
+    cv2.imshow('My Video', frame)
     key = cv2.waitKey(1)
-
     if key == ord('q'):
         break
 
