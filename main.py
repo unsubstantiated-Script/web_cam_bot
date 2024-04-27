@@ -1,6 +1,11 @@
+import glob
+import os
+
 import cv2
 import time
 from email_server import send_email
+
+from threading import Thread
 
 video = cv2.VideoCapture(0)
 time.sleep(1)
@@ -8,11 +13,26 @@ time.sleep(1)
 first_frame = None
 count = 0
 status_list = []
+count_frame = 1
+image_with_object = ""
+
+password = os.getenv("GMAIL_PASSWORD")
+sender = os.getenv("SENDER")
+receiver = os.getenv("RECEIVER")
+
+
+def clean_folder():
+    images = glob.glob('images/*.png')
+    for image in images:
+        os.remove(image)
+
 
 while True:
     count += 1
     status = 0
+
     check, frame = video.read()
+
     # Applying gray scale and Gaussian Blur to the images to make them easier to process.
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray_frame_gau = cv2.GaussianBlur(gray_frame, (21, 21), 0)
@@ -41,6 +61,13 @@ while True:
 
             if rectangle.any():
                 status = 1
+                # Only generating images if there is an object in the frame
+                cv2.imwrite(f"images/{count_frame}.png", frame)
+                count_frame += 1
+                # Getting just the image in the middle
+                all_images = glob.glob(f"images/*.png")
+                median_index = int(len(all_images) / 2)
+                image_with_object = all_images[median_index]
 
         status_list.append(status)
         # Grabbing the last two items in the list
@@ -48,15 +75,24 @@ while True:
 
         # Seeing the change as the object leaves the screen 1 -> 0
         if status_list[0] == 1 and status_list[1] == 0:
-            send_email()
+            # Setting up thread
+            email_thread = Thread(target=send_email, args=(image_with_object, password, sender, receiver))
+            # Activating thread
+            email_thread.daemon = True
 
-        cv2.imshow('My Video', frame)
+            clean_folder_thread = Thread(target=clean_folder)
+            # Activating thread
+            clean_folder_thread.daemon = True
+
+            email_thread.start()
+
     else:
         pass
 
+    cv2.imshow('My Video', frame)
     key = cv2.waitKey(1)
-
     if key == ord('q'):
         break
 
+clean_folder_thread.start()
 video.release()
