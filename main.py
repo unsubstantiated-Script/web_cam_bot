@@ -5,6 +5,8 @@ import cv2
 import time
 from email_server import send_email
 
+from threading import Thread
+
 video = cv2.VideoCapture(0)
 time.sleep(1)
 
@@ -73,8 +75,17 @@ while True:
 
         # Seeing the change as the object leaves the screen 1 -> 0
         if status_list[0] == 1 and status_list[1] == 0:
-            send_email(image_with_object, password, sender, receiver)
-            clean_folder()
+            # Setting up thread
+            email_thread = Thread(target=send_email, args=(image_with_object, password, sender, receiver))
+            # Activating thread
+            email_thread.daemon = True
+
+            clean_folder_thread = Thread(target=clean_folder)
+            # Activating thread
+            clean_folder_thread.daemon = True
+
+            email_thread.start()
+
     else:
         pass
 
@@ -83,4 +94,5 @@ while True:
     if key == ord('q'):
         break
 
+clean_folder_thread.start()
 video.release()
