@@ -1,1 +1,3 @@
-# web_cam_bot
+# Web Cam Bot
+
+Some Python code to manipulate the 'ol webcam
