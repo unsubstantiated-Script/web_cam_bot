@@ -1,3 +1,5 @@
+import glob
+
 import cv2
 import time
 from email_server import send_email
@@ -8,11 +10,13 @@ time.sleep(1)
 first_frame = None
 count = 0
 status_list = []
-
+count_frame = 1
 while True:
     count += 1
     status = 0
+
     check, frame = video.read()
+
     # Applying gray scale and Gaussian Blur to the images to make them easier to process.
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray_frame_gau = cv2.GaussianBlur(gray_frame, (21, 21), 0)
@@ -41,6 +45,13 @@ while True:
 
             if rectangle.any():
                 status = 1
+                # Only generating images if there is an object in the frame
+                cv2.imwrite(f"images/{count_frame}.png", frame)
+                count_frame += 1
+                # Getting just the image in the middle
+                all_images = glob.glob(f"images/*.png")
+                median_index = int(len(all_images) / 2)
+                image_with_object = all_images[median_index]
 
         status_list.append(status)
         # Grabbing the last two items in the list
@@ -48,7 +59,7 @@ while True:
 
         # Seeing the change as the object leaves the screen 1 -> 0
         if status_list[0] == 1 and status_list[1] == 0:
-            send_email()
+            send_email(image_with_object, )
 
         cv2.imshow('My Video', frame)
     else:
